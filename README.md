@@ -5,42 +5,42 @@ Gradle based application to provide automatic updates optionally in combination 
 
 Please see [build.gradle](/build.gradle) for more information.
 
-**Note**: There is nothing Gradle spesific about FXLauncher, and these operations should be easy to perform in any build system.
-	There is also a [Maven version](https://github.com/edvin/fxldemo) of this project. 
+**Note**: Even though FXLauncher has a Gradle plugin, there is nothing Gradle spesific about it, and these operations should be easy to perform in any build system.
+	There is also a [Maven version](https://github.com/edvin/fxldemo) of this project.
 
 ## Operations
 
-The build script supports the following operations:
+The Gradle plugin supports the following tasks:
 
-- **buildApp**: Assembles the application into build/libs
-- **deployApp**: Transfers application to appDeployTarget via scp
-- **installer**: Generates native installer
+- **copyAppDependencies**: Assembles the application into `build/fxlauncher`
+- **generateApplicationManifest**: Generates app.xml into `build/fxlauncher`
+- **embedApplicationManifest**: Copies app.xml into `fxlauncher.jar`
+- **deployApp**: Transfers application to `deployTarget` via scp
+- **generateNativeInstaller**: Generates native installer
+
+Normally you would only perform `deployApp` to update your application, as all the previous
+tasks are dependencies on this one. To test your app locally in `build/fxlauncher` you
+only need to run the `embedApplicationManifest` task.
 
 ### Configuration
 
-Copy the deployment descriptor and customize the following properties:
+See [build.gradle](/build.gradle) for configuration options.
 
-```groovy
-// Installer Filename without suffix
-def appFilename = 'FxlDemo'
-
-// The JavaFX Application class name
-def appMainClass = 'no.tornado.FxlDemo'
-
-// The Application vendor used by javapackager
-def appVendor = 'AcmeInc'
-
-// The Application version used by javapackager
-def appVersion = '2.0'
-
-// Base URL where you will host the application artifacts
-def appUrl = 'http://fxldemo.tornado.no/'
-
-// Optional scp target for application artifacts hosted at the above url
-def appDeployTarget = 'w48839@fxldemo.tornado.no:fxldemo'
-```
- 
 ### Prebuilt installers
 
 See http://fxldemo.tornado.no for a prebuilt version of this application, including native installers
 for Windows, MacOSX and Linux.
+
+### Deploy to Amazon S3
+
+The built in `deployApp` task will only deploy using scp. If you want to deploy to Amazon S3, you can include this task in your build. Make sure
+you run the `embedApplicationManifest` first.
+
+```groovy
+task deployS3(type: Exec) {
+    // You need to have installed AWS command line interface: https://aws.amazon.com/cli/
+    commandLine 'aws', 'configure', 'set', 'aws_access_key_id', 'your_access_key_id'
+    commandLine 'aws', 'configure', 'set', 'aws_secret_access_key', 'your_secret_access_key'
+    commandLine 'aws', 's3', 'cp', 'build/libs', appDeployTarget, '--acl', 'public-read', '--recursive', '--region', 'us-west-1'
+}
+```
